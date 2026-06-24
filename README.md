@@ -116,4 +116,11 @@ my-crm/
 - `pnpm run docker:down`: Stop the Docker Compose stack
 
 
-
+ "Manual Supabase Setup Instructions:"
+│  1. Ensure Docker is installed and running.
+│  2. Install the Supabase CLI (e.g., `npm install -g supabase`).
+│  3. Run `supabase init` in your project's `packages/db` directory.
+│  4. Run `supabase start` in your project's `packages/db` directory.
+│  5. Copy the 'DB URL' from the output.
+│  6. Add the DB URL to the .env file in `apps/server/.env` as `DATABASE_URL`:
+│                       DATABASE_URL="your_supabase_db_url"
