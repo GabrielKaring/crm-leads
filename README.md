@@ -1,126 +1,116 @@
-# my-crm
+# CRM-Lite — Captador de Leads
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Express, TRPC, and more.
+Inbox unificado de leads + funil de vendas simples. O **n8n** captura leads de formulários, e-mail e WhatsApp e os envia via webhook para este app. O app organiza tudo num quadro visual (kanban) onde você move o lead de etapa em etapa até fechar — ou perder.
 
-## Features
+> Projeto de estudo (Better-T-Stack, ~1h/dia) com potencial de monetização futura.
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Express** - Fast, unopinionated web framework
-- **tRPC** - End-to-end type-safe APIs
-- **Node.js** - Runtime environment
-- **Prisma** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Turborepo** - Optimized monorepo build system
+## Como funciona
 
-## Getting Started
+```
+n8n (formulário / e-mail / WhatsApp)
+        │
+        │  POST /api/leads  (webhook)
+        ▼
+   Express + tRPC  ──→  PostgreSQL (Supabase)
+        │
+        ▼
+   Next.js  →  Funil kanban de leads
+```
 
-First, install the dependencies:
+O n8n resolve a parte difícil (integrações, agendamento, scraping). Este app resolve a parte que ninguém entrega pronta: guardar, organizar, mostrar e reagir a cada lead.
+
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | Next.js + TailwindCSS + shadcn/ui |
+| Backend | Express + tRPC |
+| Banco | PostgreSQL via Prisma (Supabase local) |
+| Auth | Better-Auth |
+| Monorepo | Turborepo + pnpm workspaces |
+
+## Estrutura
+
+```
+my-crm/
+├── apps/
+│   ├── web/       # Frontend Next.js (funil, views de leads)
+│   └── server/    # Backend Express + tRPC + webhook endpoint
+└── packages/
+    ├── ui/        # Componentes shadcn/ui compartilhados
+    ├── api/       # Routers tRPC
+    ├── auth/      # Better-Auth
+    ├── db/        # Schema Prisma + client
+    ├── config/    # Config compartilhada
+    └── env/       # Env vars tipadas com Zod
+```
+
+## Setup local
+
+### 1. Instalar dependências
 
 ```bash
 pnpm install
 ```
 
-## Database Setup
-
-This project uses PostgreSQL with Prisma.
-
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
+### 2. Banco de dados (Supabase local)
 
 ```bash
-pnpm run db:push
+# Na pasta packages/db:
+supabase init
+supabase start
+# Copie a DB URL do output e cole em apps/server/.env:
+# DATABASE_URL="postgresql://..."
 ```
 
-Then, run the development server:
+### 3. Aplicar schema e rodar
 
 ```bash
-pnpm run dev
+pnpm run db:push   # sincroniza o schema
+pnpm run dev       # inicia web (3001) + server (3000)
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+- Web: [http://localhost:3001](http://localhost:3001)
+- API: [http://localhost:3000](http://localhost:3000)
 
-## UI Customization
+## Scripts disponíveis
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
+| Script | O que faz |
+|---|---|
+| `pnpm run dev` | Inicia tudo em modo desenvolvimento |
+| `pnpm run dev:web` | Só o frontend |
+| `pnpm run dev:server` | Só o backend |
+| `pnpm run build` | Build de produção |
+| `pnpm run check-types` | Verifica tipos TS em todo o monorepo |
+| `pnpm run db:push` | Aplica o schema ao banco |
+| `pnpm run db:generate` | Gera o cliente Prisma |
+| `pnpm run db:migrate` | Roda migrations |
+| `pnpm run db:studio` | Abre o Prisma Studio |
+| `pnpm run docker:build` | Build das imagens Docker |
+| `pnpm run docker:up` | Sobe o stack Docker Compose |
+| `pnpm run docker:down` | Para o stack |
+| `pnpm run docker:logs` | Tail dos logs Docker |
 
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
+## UI — componentes compartilhados
 
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
+Primitivos shadcn/ui ficam em `packages/ui`. Para adicionar mais:
 
 ```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
+npx shadcn@latest add accordion dialog table -c packages/ui
 ```
 
-Import shared components like this:
+Importe assim:
 
 ```tsx
 import { Button } from "@my-crm/ui/components/button";
 ```
 
-### Add app-specific blocks
+Tokens de design e estilos globais: `packages/ui/src/styles/globals.css`.
 
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
+## Deploy
 
-## Deployment
+Docker Compose para o server (`docker-compose.yml`). Dockerfiles em `apps/*/Dockerfile`. Variáveis de ambiente lidas dos `.env` de cada app e sobrescritas no `docker-compose.yml` para networking entre containers.
 
-### Docker Compose
+## Contexto do projeto
 
-- Target: server
-- Config: `docker-compose.yml` (app Dockerfiles live in `apps/*/Dockerfile`)
-- Build images: pnpm run docker:build
-- Start: pnpm run docker:up
-- Logs: pnpm run docker:logs
-- Stop: pnpm run docker:down
-
-Environment variables are read from each app's `.env` file (baked into web builds for public variables) and overridden in `docker-compose.yml` for container networking.
-
-## Project Structure
-
-```
-my-crm/
-├── apps/
-│   ├── web/         # Frontend application (Next.js)
-│   └── server/      # Backend API (Express, TRPC)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run dev:server`: Start only the server
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run docker:build`: Build the Docker Compose images
-- `pnpm run docker:up`: Build and start the Docker Compose stack
-- `pnpm run docker:logs`: Tail logs from the Docker Compose stack
-- `pnpm run docker:down`: Stop the Docker Compose stack
-
-
- "Manual Supabase Setup Instructions:"
-│  1. Ensure Docker is installed and running.
-│  2. Install the Supabase CLI (e.g., `npm install -g supabase`).
-│  3. Run `supabase init` in your project's `packages/db` directory.
-│  4. Run `supabase start` in your project's `packages/db` directory.
-│  5. Copy the 'DB URL' from the output.
-│  6. Add the DB URL to the .env file in `apps/server/.env` as `DATABASE_URL`:
-│                       DATABASE_URL="your_supabase_db_url"
+Criado com [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack). Para detalhes de arquitetura e convenções de código, veja [CLAUDE.md](./CLAUDE.md).
